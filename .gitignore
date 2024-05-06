@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.spec.bak
+
+# venv
+.venv/
+venv/
+
+# PyInstaller
+*.manifest
+
+# pytest
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
