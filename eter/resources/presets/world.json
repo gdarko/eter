@@ -1,0 +1,97 @@
+{
+  "id": "world",
+  "name": "World",
+  "version": 1,
+  "stations": [
+    {
+      "name": "BBC World Service",
+      "url": "http://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+      "group": "News & Talk",
+      "favorite": false
+    },
+    {
+      "name": "NPR",
+      "url": "http://npr-ice.streamguys1.com/live.mp3",
+      "group": "News & Talk",
+      "favorite": false
+    },
+    {
+      "name": "WNYC",
+      "url": "https://fm939.wnyc.org/wnycfm",
+      "group": "News & Talk",
+      "favorite": false
+    },
+    {
+      "name": "Jazz24",
+      "url": "https://knkx-live-a.edge.audiocdn.com/6285_256k",
+      "group": "Jazz",
+      "favorite": false
+    },
+    {
+      "name": "Radio Swiss Jazz",
+      "url": "http://stream.srg-ssr.ch/m/rsj/mp3_128",
+      "group": "Jazz",
+      "favorite": false
+    },
+    {
+      "name": "Classic FM",
+      "url": "http://ice-the.musicradio.com/ClassicFMMP3",
+      "group": "Classical",
+      "favorite": false
+    },
+    {
+      "name": "Radio Swiss Pop",
+      "url": "http://stream.srg-ssr.ch/m/rsp/mp3_128",
+      "group": "Pop",
+      "favorite": false
+    },
+    {
+      "name": "Radio Paradise",
+      "url": "http://stream-uk1.radioparadise.com/aac-320",
+      "group": "Eclectic",
+      "favorite": false
+    },
+    {
+      "name": "Radio Paradise Mellow",
+      "url": "http://stream-uk1.radioparadise.com/mellow-320",
+      "group": "Eclectic",
+      "favorite": false
+    },
+    {
+      "name": "KCRW Eclectic24",
+      "url": "https://streams.kcrw.com/e24_mp3",
+      "group": "Eclectic",
+      "favorite": false
+    },
+    {
+      "name": "FIP",
+      "url": "http://icecast.radiofrance.fr/fip-hifi.aac",
+      "group": "Eclectic",
+      "favorite": false
+    },
+    {
+      "name": "NTS Radio",
+      "url": "http://stream-relay-geo.ntslive.net/stream",
+      "group": "Eclectic",
+      "favorite": false
+    },
+    {
+      "name": "SomaFM Groove Salad",
+      "url": "https://ice5.somafm.com/groovesalad-128-mp3",
+      "group": "Electronic",
+      "favorite": false
+    },
+    {
+      "name": "SomaFM Drone Zone",
+      "url": "https://ice4.somafm.com/dronezone-128-mp3",
+      "group": "Electronic",
+      "favorite": false
+    },
+    {
+      "name": "KEXP",
+      "url": "http://live-mp3-128.kexp.org/kexp128.mp3",
+      "group": "Alternative",
+      "favorite": false
+    }
+  ]
+}

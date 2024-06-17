@@ -1,0 +1,229 @@
+{
+  "id": "makedonski",
+  "name": "Македонски",
+  "version": 1,
+  "stations": [
+    {
+      "name": "Antenna 5",
+      "url": "https://antenna5stream.neotel.mk/live64",
+      "group": "Macedonia",
+      "favorite": true
+    },
+    {
+      "name": "Radio Fortuna",
+      "url": "https://radiofortuna.ipradio.mk/;*.mp3",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio CND",
+      "url": "https://radiocnd.mms.mk/proxy/offnet/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "City Radio 94.7",
+      "url": "http://176.9.117.123:9998/;",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Metropolis Radio",
+      "url": "https://eu4.fastcast4u.com/proxy/metradio?mp=/1",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Star FM",
+      "url": "https://eu11.fastcast4u.com/starmain",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77",
+      "url": "https://radiocnd.mms.mk/proxy/reactradio/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 ExYU",
+      "url": "https://radiocnd.mms.mk/proxy/exyunew/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Makedonsko",
+      "url": "https://radiocnd.mms.mk/proxy/makedonsko/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Folk",
+      "url": "https://radiocnd.mms.mk/proxy/folkmk/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Cafe",
+      "url": "https://radiocnd.mms.mk/proxy/cafe/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Fresh",
+      "url": "https://radiocnd.mms.mk/proxy/freshnew/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Rock",
+      "url": "https://radiocnd.mms.mk/proxy/rock/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Deephouse",
+      "url": "https://radiocnd.mms.mk/proxy/deephouse/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Milenium",
+      "url": "https://radiocnd.mms.mk/proxy/millennium/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Folk ExYU",
+      "url": "https://radiocnd.mms.mk/proxy/folk/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 80s",
+      "url": "https://radiocnd.mms.mk/proxy/80s/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 90s",
+      "url": "https://radiocnd.mms.mk/proxy/90s/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kanal77 Dance",
+      "url": "https://radiocnd.mms.mk/proxy/dance/stream",
+      "group": "Kanal 77",
+      "favorite": false
+    },
+    {
+      "name": "Kiss FM",
+      "url": "https://kissfmradionet.radioca.st/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Sky Radio",
+      "url": "https://s1.skyradio.com.mk/;*.mp3",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Македонски Фолк Радио",
+      "url": "https://folk.mkradio.online/listen/mk-folk-radio/radio.mp3",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Life Radio Skopje",
+      "url": "https://radio.life.com.mk/",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Kanal 103",
+      "url": "https://radiostream.neotel.mk/kanal103",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "PlayFM",
+      "url": "https://radio.shoutcast.mk:8046/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Lider",
+      "url": "https://liderfm.ipradio.mk/;*mp3",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Tajm Fm",
+      "url": "https://s2.free-shoutcast.com/stream/18058",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Bubamara",
+      "url": "https://stream.bubamara.com.mk/live",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio 105 Bombarder",
+      "url": "http://radio105.makbots.com:21010/;",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Hit Portal",
+      "url": "https://radio.shoutcast.mk:2020/stream/hitradio",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Gradski MediaService",
+      "url": "https://dc1.serverse.com/proxy/akrpnnld/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "UrbanFM Skopje",
+      "url": "https://securestreams4.autopo.st:1668/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Star Radio ExYu Retro",
+      "url": "https://eu11.fastcast4u.com/starexyuretro",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Pela",
+      "url": "https://str.mkdstream.com/stream/pelamk",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Ohrid 24 Radio",
+      "url": "https://stream.iradio.pro/proxy/ohrid24?mp=/stream",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Kočani",
+      "url": "https://str.mkdstream.com/stream/kocanifm",
+      "group": "Macedonia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Aleksandar Makedonski",
+      "url": "https://s2.free-shoutcast.com/stream/18138",
+      "group": "Macedonia",
+      "favorite": false
+    }
+  ]
+}

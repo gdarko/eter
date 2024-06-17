@@ -1,0 +1,19 @@
+{
+  "packs": [
+    {
+      "id": "makedonski",
+      "name": "Македонски",
+      "version": 1
+    },
+    {
+      "id": "ex-yu",
+      "name": "ex-YU",
+      "version": 1
+    },
+    {
+      "id": "world",
+      "name": "World",
+      "version": 1
+    }
+  ]
+}

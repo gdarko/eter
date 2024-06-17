@@ -1,0 +1,307 @@
+{
+  "id": "ex-yu",
+  "name": "ex-YU",
+  "version": 1,
+  "stations": [
+    {
+      "name": "Naxi Radio",
+      "url": "https://naxi128ssl.streaming.rs:9152/;stream.nsv",
+      "group": "Naxi",
+      "favorite": true
+    },
+    {
+      "name": "Naxi Cafe",
+      "url": "http://naxidigital-cafe128.streaming.rs:8020/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/cafe",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Rock",
+      "url": "http://naxidigital-rock128.streaming.rs:8180/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/rock",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Love",
+      "url": "http://naxidigital-love128.streaming.rs:8100/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/love",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Classic",
+      "url": "http://naxidigital128.kbcnet.rs:8030/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/classic",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Dance",
+      "url": "http://naxidigital-dance128.streaming.rs:8110/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/dance",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi House",
+      "url": "http://naxidigital128.kbcnet.rs:8000/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/house",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Clubbing",
+      "url": "http://naxidigital128.kbcnet.rs:8090/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/clubbing",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi 80s",
+      "url": "http://naxidigital-80s128.streaming.rs:8040/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/80e",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Evergreen",
+      "url": "http://naxidigital-evergreen128.streaming.rs:8010/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/evergreen",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Boem",
+      "url": "http://109.206.96.18:8050/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/boem",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Naxi Kids",
+      "url": "http://naxidigital128.kbcnet.rs:8050/;stream.nsv",
+      "group": "Naxi",
+      "favorite": false,
+      "now_playing": {
+        "url": "https://www.naxi.rs/kids",
+        "container_class": "song-info",
+        "artist_class": "artist",
+        "song_class": "song"
+      }
+    },
+    {
+      "name": "Cool Radio",
+      "url": "http://176.9.30.66/cool64",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "OK Radio",
+      "url": "https://sslstream.okradio.net/;?type=http&nocache=8804",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "Hit FM",
+      "url": "http://streaming.hitfm.rs:8000/hit",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "TDI Radio",
+      "url": "http://streaming.tdiradio.com:8000/tdiradio",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "Play Radio",
+      "url": "http://stream.playradio.rs:8001/play.aac",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Nostalgija",
+      "url": "http://nostalgie128.streaming.rs:9250/",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "Radio S Narodni",
+      "url": "https://stream.radios.rs:9016/;*.mp3",
+      "group": "Serbia",
+      "favorite": false
+    },
+    {
+      "name": "Antena Zagreb",
+      "url": "http://live.antenazagreb.hr:8002/;",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "Otvoreni Radio",
+      "url": "https://stream.otvoreni.hr/otvoreni",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Dalmacija",
+      "url": "http://shoutcast.pondi.hr:8000/;",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "HRT HR 1",
+      "url": "http://27863.live.streamtheworld.com/PROGRAM1AAC_SC",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "HRT HR 2",
+      "url": "http://28033.live.streamtheworld.com/PROGRAM2AAC_SC",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "Yammat FM",
+      "url": "https://stream.yammat.fm/radio/8000/yammat.mp3",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "Enter Zagreb",
+      "url": "http://live.enterzagreb.hr:8023/",
+      "group": "Croatia",
+      "favorite": false
+    },
+    {
+      "name": "Big Radio 1",
+      "url": "http://big1.bigportal.ba:8100/big1",
+      "group": "Bosnia",
+      "favorite": false
+    },
+    {
+      "name": "Radio BIR",
+      "url": "http://188.40.62.20:8090/",
+      "group": "Bosnia",
+      "favorite": false
+    },
+    {
+      "name": "HIT Radio Brčko",
+      "url": "http://51.254.61.148:8152/;autostart=1",
+      "group": "Bosnia",
+      "favorite": false
+    },
+    {
+      "name": "Srce Krajine",
+      "url": "https://srv.mediastriming.com/8330/stream",
+      "group": "Bosnia",
+      "favorite": false
+    },
+    {
+      "name": "Val 202",
+      "url": "http://mp3.rtvslo.si/val202",
+      "group": "Slovenia",
+      "favorite": false
+    },
+    {
+      "name": "Radio Prvi",
+      "url": "http://mp3.rtvslo.si/ra1",
+      "group": "Slovenia",
+      "favorite": false
+    },
+    {
+      "name": "Radio 1",
+      "url": "http://live.radio.si/Radio1",
+      "group": "Slovenia",
+      "favorite": false
+    },
+    {
+      "name": "Rock Radio SI",
+      "url": "http://stream.rockradio.si:9034/;",
+      "group": "Slovenia",
+      "favorite": false
+    },
+    {
+      "name": "Hitradio Center",
+      "url": "http://stream3.radiocenter.si:8000/center",
+      "group": "Slovenia",
+      "favorite": false
+    },
+    {
+      "name": "Antena M",
+      "url": "http://radioservis.me:8010/antenamlive",
+      "group": "Montenegro",
+      "favorite": false
+    },
+    {
+      "name": "Radio Svetigora",
+      "url": "http://svetigoralive.com:8879/;",
+      "group": "Montenegro",
+      "favorite": false
+    },
+    {
+      "name": "Play Radio Montenegro",
+      "url": "https://stream.playradio.me:8443/play-me.mp3",
+      "group": "Montenegro",
+      "favorite": false
+    },
+    {
+      "name": "Radio Skadar",
+      "url": "http://radioservis.me:8050/radioskadar",
+      "group": "Montenegro",
+      "favorite": false
+    }
+  ]
+}
