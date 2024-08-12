@@ -1,0 +1,17 @@
+from eter.updater import is_newer, parse_version
+
+
+def test_parse_version():
+    assert parse_version("v1.2.3") == (1, 2, 3)
+    assert parse_version("1.2") == (1, 2, 0)
+    assert parse_version("2") == (2, 0, 0)
+    assert parse_version("v1.4.0-beta") == (1, 4, 0)
+    assert parse_version("") == (0, 0, 0)
+
+
+def test_is_newer():
+    assert is_newer("v0.2.0", "0.1.0")
+    assert is_newer("1.0.0", "0.9.9")
+    assert is_newer("0.1.10", "0.1.9")
+    assert not is_newer("0.1.0", "0.1.0")
+    assert not is_newer("v0.1.0", "v0.2.0")
