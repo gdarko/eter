@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=eter
+Comment=Menu-bar internet radio player
+Exec=/opt/eter/eter
+Icon=eter
+Categories=AudioVideo;Audio;Player;
+Terminal=false
