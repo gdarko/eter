@@ -9,7 +9,7 @@ lets you add your own stations.
 - Lives in the macOS menu bar, Windows tray, or Linux system tray.
 - Lives in the menu bar / system tray on macOS, Windows, and Linux.
 - Organize stations into your own editable packs, managed in Settings.
-- Polished now-playing dropdown with a monogram badge and live status.
+- Polished now-playing dropdown with an audio-reactive waveform.
 - Shows the current song, with optional notifications.
 - Plays MP3 and AAC internet radio.
 - Auto-reconnect, sleep timer, and resume on launch.

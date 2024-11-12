@@ -1,17 +1,26 @@
 """Audio playback.
 
 RadioPlayer is a Facade over the Qt Multimedia subsystem (QMediaPlayer,
-QAudioOutput) plus URL preparation and auto-reconnect, exposing one small
-domain API (play / stop / set_volume + signals).
+QAudioOutput, QAudioBufferOutput) plus URL preparation and auto-reconnect,
+exposing one small domain API (play / stop / set_volume + signals).
 """
 from __future__ import annotations
 
+import array
 import threading
 
 from PySide6.QtCore import QObject, QTimer, QUrl, Signal, Slot
-from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtMultimedia import (
+    QAudioBufferOutput,
+    QAudioFormat,
+    QAudioOutput,
+    QMediaPlayer,
+)
 
 from . import urlprep
+
+# Maps a raw RMS (~0.2-0.4 for typical music) onto a lively 0..1 bar level.
+AUDIO_GAIN = 3.2
 
 # Auto-reconnect backoff for dropped streams.
 RECONNECT_BASE_MS = 1000
@@ -22,6 +31,43 @@ def reconnect_delay(attempts: int, base: int = RECONNECT_BASE_MS, cap: int = REC
     """Exponential backoff in ms, capped. attempts=0 -> base."""
     return min(cap, base * (2 ** max(0, attempts)))
 
+_TYPECODE = {
+    QAudioFormat.SampleFormat.Int16: ("h", 32768.0, 0),
+    QAudioFormat.SampleFormat.Int32: ("i", 2147483648.0, 0),
+    QAudioFormat.SampleFormat.Float: ("f", 1.0, 0),
+    QAudioFormat.SampleFormat.UInt8: ("B", 128.0, 128),
+}
+
+
+def rms_from_bytes(raw: bytes, sample_format, max_samples: int = 512) -> float:
+    """Root-mean-square amplitude (0..1) of a PCM byte buffer. Pure/testable."""
+    spec = _TYPECODE.get(sample_format)
+    if not spec or not raw:
+        return 0.0
+    typecode, norm, bias = spec
+    samples = array.array(typecode)
+    usable = len(raw) - (len(raw) % samples.itemsize)
+    if usable <= 0:
+        return 0.0
+    samples.frombytes(raw[:usable])
+    step = max(1, len(samples) // max_samples)
+    acc = 0.0
+    count = 0
+    for i in range(0, len(samples), step):
+        v = (samples[i] - bias) / norm
+        acc += v * v
+        count += 1
+    return (acc / count) ** 0.5 if count else 0.0
+
+
+def _buffer_level(buf) -> float:
+    try:
+        raw = bytes(buf.constData())
+        rms = rms_from_bytes(raw, buf.format().sampleFormat())
+    except Exception:  # noqa: BLE001 - visualisation is best-effort
+        return 0.0
+    return min(1.0, rms * AUDIO_GAIN)
+
 
 class RadioPlayer(QObject):
     """Thin wrapper around QMediaPlayer + QAudioOutput for internet radio.
@@ -31,6 +77,7 @@ class RadioPlayer(QObject):
 
     stateChanged = Signal(str)
     errorText = Signal(str)
+    audioLevel = Signal(float)  # 0..1, per decoded audio buffer
 
     # internal, used to hop playlist resolution back onto the GUI thread
     _resolved = Signal(str)
@@ -42,6 +89,11 @@ class RadioPlayer(QObject):
         self._player = QMediaPlayer()
         self._player.setAudioOutput(self._audio)
         self._current_url = ""
+
+        # Tap the decoded audio to drive the waveform (does not affect playback).
+        self._buffer_output = QAudioBufferOutput()
+        self._player.setAudioBufferOutput(self._buffer_output)
+        self._buffer_output.audioBufferReceived.connect(self._on_audio_buffer)
 
         self._player.playbackStateChanged.connect(self._on_playback_state)
         self._player.mediaStatusChanged.connect(self._on_media_status)
@@ -86,6 +138,7 @@ class RadioPlayer(QObject):
         self._player.stop()
         self._player.setSource(QUrl())
         self.stateChanged.emit("stopped")
+        self.audioLevel.emit(0.0)
 
     def is_active(self) -> bool:
         return self._player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
@@ -150,6 +203,7 @@ class RadioPlayer(QObject):
         if not self._intended_url or self._reconnect_timer.isActive():
             return
         self.stateChanged.emit("reconnecting")
+        self.audioLevel.emit(0.0)
         self._reconnect_timer.start(reconnect_delay(self._reconnect_attempts))
 
     def _do_reconnect(self) -> None:
@@ -161,3 +215,6 @@ class RadioPlayer(QObject):
         self._player.setSource(QUrl())
         self._player.setSource(QUrl(url))
         self._player.play()
+
+    def _on_audio_buffer(self, buf) -> None:
+        self.audioLevel.emit(_buffer_level(buf))

@@ -1,7 +1,10 @@
-"""Custom widgets for the now-playing header: monogram badge and header card."""
+"""Custom widgets for the now-playing header: monogram, waveform, header card."""
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt, Signal
+import math
+from collections import deque
+
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFontMetrics, QPainter
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -63,6 +66,79 @@ class MonogramBadge(QWidget):
         p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self._letter)
 
 
+class WaveformWidget(QWidget):
+    """Scrolling waveform: audio-reactive while playing, decorative otherwise."""
+
+    N = 56
+    STALE_TICKS = 12  # ~0.4s without audio -> fall back to animation
+
+    def __init__(self, palette: Palette, parent=None):
+        super().__init__(parent)
+        self._pal = palette
+        self._levels: deque[float] = deque([0.0] * self.N, maxlen=self.N)
+        self._incoming = 0.0
+        self._since_audio = 999
+        self._mode = "stop"  # stop | busy | play
+        self._phase = 0.0
+        self.setMinimumHeight(48)
+        self._timer = QTimer(self)
+        self._timer.setInterval(33)
+        self._timer.timeout.connect(self._tick)
+        self._timer.start()
+
+    def set_palette(self, palette: Palette) -> None:
+        self._pal = palette
+        self.update()
+
+    def set_mode(self, mode: str) -> None:
+        self._mode = mode
+        if mode == "stop":
+            self._since_audio = 999
+
+    def push_level(self, v: float) -> None:
+        self._incoming = max(0.0, min(1.0, v))
+        self._since_audio = 0
+
+    def _tick(self) -> None:
+        self._phase += 0.28
+        if self._mode == "stop":
+            target = 0.0
+        elif self._mode == "play" and self._since_audio < self.STALE_TICKS:
+            target = self._incoming
+            self._since_audio += 1
+        else:  # buffering/connecting, or playing with stale audio -> animate
+            target = (
+                0.30
+                + 0.20 * abs(math.sin(self._phase))
+                + 0.10 * abs(math.sin(self._phase * 1.7 + 1.0))
+            )
+        self._levels.append(target)
+        self.update()
+
+    def paintEvent(self, _e) -> None:
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        mid = h / 2
+        n = len(self._levels)
+        gap = 2.0
+        bw = max(2.0, (w - (n - 1) * gap) / n)
+        accent = QColor(self._pal.accent)
+        base = QColor(self._pal.slot)
+        p.setPen(Qt.PenStyle.NoPen)
+        for i, lv in enumerate(self._levels):
+            x = i * (bw + gap)
+            bh = max(2.0, lv * (h - 4))
+            if lv > 0.02:
+                col = QColor(accent)
+                t = i / max(1, n - 1)  # newest (right) brightest
+                col.setAlpha(int(70 + 185 * t) if self._mode != "stop" else 90)
+            else:
+                col = base
+            p.setBrush(col)
+            p.drawRoundedRect(QRectF(x, mid - bh / 2, bw, bh), bw / 2, bw / 2)
+
+
 class NowPlayingHeader(QWidget):
     """The fixed-width now-playing card at the top of the menu."""
 
@@ -111,6 +187,9 @@ class NowPlayingHeader(QWidget):
         top.addLayout(info, 1)
         outer.addLayout(top)
 
+        self.wave = WaveformWidget(self._pal)
+        outer.addWidget(self.wave)
+
         trans = QHBoxLayout()
         trans.setSpacing(10)
         self.playBtn = QToolButton()
@@ -157,10 +236,16 @@ class NowPlayingHeader(QWidget):
         self._state = state
         active = state in _ACTIVE
         self.playBtn.setIcon(icons.glyph_icon("stop" if active else "play", "#ffffff", 40))
+        mode = "play" if state == "playing" else ("busy" if active else "stop")
+        self.wave.set_mode(mode)
         self._refresh()
+
+    def push_level(self, v: float) -> None:
+        self.wave.push_level(v)
 
     def apply_palette(self, p: Palette) -> None:
         self._pal = p
+        self.wave.set_palette(p)
         self.spk.setPixmap(icons.glyph_pixmap("speaker", p.text2, 20))
         self.setStyleSheet(self._qss(p))
         self.playBtn.setIcon(

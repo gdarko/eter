@@ -80,6 +80,7 @@ class TrayApp(QObject):
 
         self.player.stateChanged.connect(self._on_state)
         self.player.errorText.connect(self._on_error)
+        self.player.audioLevel.connect(self.header.push_level)
         self.nowplaying.titleChanged.connect(self._on_title)
         self.catalog.changed.connect(self._build_menu)  # Observer
         try:
@@ -374,8 +375,8 @@ class TrayApp(QObject):
 
     # ---------------------------------------------------------------- system
     def _on_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        # We render the menu ourselves (not the native tray menu) so the custom
-        # header renders consistently on all platforms.
+        # We render the menu ourselves (not the native tray menu) so the
+        # waveform animates and the custom header renders on all platforms.
         R = QSystemTrayIcon.ActivationReason
         if reason in (R.Trigger, R.Context):
             self._popup_menu()
