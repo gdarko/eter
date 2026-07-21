@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: "3.12"
+  # Runtime libs Qt needs for offscreen rendering on Linux CI.
+  QT_LINUX_DEPS: "libegl1 libgl1 libglib2.0-0 libxkbcommon0 libxcb-cursor0 libdbus-1-3"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: sudo apt-get update && sudo apt-get install -y ${{ env.QT_LINUX_DEPS }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Qt runtime libs (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ${{ env.QT_LINUX_DEPS }} rpm
+
+      - name: Install project
+        run: pip install ".[dev]"
+
+      - name: Build with PyInstaller
+        run: pyinstaller eter.spec --noconfirm --clean
+
+      # ---------- macOS: .dmg ----------
+      - name: Package macOS (.dmg)
+        if: runner.os == 'macOS'
+        run: |
+          hdiutil create -volname eter -srcfolder dist/eter.app \
+            -ov -format UDZO dist/eter-macos.dmg
+      - name: Upload macOS
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eter-macos
+          path: dist/eter-macos.dmg
+
+      # ---------- Windows: portable .zip + Setup.exe ----------
+      - name: Package Windows (.zip)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path dist/eter/* -DestinationPath dist/eter-windows-x64.zip
+      - name: Build Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $version = "${env:GITHUB_REF_NAME}" -replace '^v', ''
+          if (-not $version) { $version = "0.0.0" }
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version packaging\eter.iss
+      - name: Upload Windows
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eter-windows
+          path: |
+            dist/eter-windows-x64.zip
+            dist/eter-Setup-*.exe
+
+      # ---------- Linux: tar.gz + .deb + .rpm ----------
+      - name: Package Linux (tar.gz, deb, rpm)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -z "$VERSION" ] && VERSION="0.0.0"
+
+          tar -C dist -czf "dist/eter-linux-x64.tar.gz" eter
+
+          STAGE="$(mktemp -d)"
+          mkdir -p "$STAGE/opt/eter" "$STAGE/usr/bin" \
+                   "$STAGE/usr/share/applications" \
+                   "$STAGE/usr/share/icons/hicolor/256x256/apps"
+          cp -a dist/eter/. "$STAGE/opt/eter/"
+          ln -s /opt/eter/eter "$STAGE/usr/bin/eter"
+          cp packaging/eter.desktop "$STAGE/usr/share/applications/eter.desktop"
+          QT_QPA_PLATFORM=offscreen python packaging/make_icon.py \
+            "$STAGE/usr/share/icons/hicolor/256x256/apps/eter.png" 256
+
+          sudo gem install --no-document fpm
+          COMMON=(-s dir -C "$STAGE" -n eter -v "$VERSION" --license MIT \
+                  --description "Menu-bar internet radio player" \
+                  --url "https://github.com/${GITHUB_REPOSITORY}")
+          fpm "${COMMON[@]}" -t deb \
+              --depends libxcb1 --depends libglib2.0-0 --depends libgl1 \
+              -p "dist/eter_${VERSION}_amd64.deb" .
+          fpm "${COMMON[@]}" -t rpm \
+              -p "dist/eter-${VERSION}.x86_64.rpm" .
+      - name: Upload Linux
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: eter-linux
+          path: |
+            dist/eter-linux-x64.tar.gz
+            dist/*.deb
+            dist/*.rpm
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false
