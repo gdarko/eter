@@ -26,6 +26,10 @@ APP_VERSION = _app_version()
 _m = re.match(r"\d+(?:\.\d+){0,2}", APP_VERSION)
 SHORT_VERSION = _m.group(0) if _m else "0.0.0"
 
+# Only strip on Unix. GNU strip corrupts Windows PE binaries (the CI runner has it
+# on PATH), which breaks the bundled DLLs -> "Failed to load Python DLL".
+STRIP = sys.platform != "win32"
+
 datas = collect_data_files("eter")  # bundles eter/resources/presets/*.json
 hiddenimports = ["eter", "eter.__main__"]
 
@@ -80,7 +84,7 @@ exe = EXE(
     exclude_binaries=True,
     name="eter",
     debug=False,
-    strip=True,
+    strip=STRIP,
     upx=False,
     console=False,  # GUI app: no console window on Windows
 )
@@ -89,7 +93,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=True,
+    strip=STRIP,
     upx=False,
     name="eter",
 )
