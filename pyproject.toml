@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eter"
-version = "0.1.0"
+dynamic = ["version"]  # read from eter.__version__ (single source of truth)
 description = "Cross-platform menu-bar internet radio player (Naxi + Macedonian stations by default)"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -26,6 +26,9 @@ eter = "eter.__main__:main"
 
 [tool.setuptools]
 packages = ["eter", "eter.resources"]
+
+[tool.setuptools.dynamic]
+version = { attr = "eter.__version__" }
 
 [tool.setuptools.package-data]
 "eter.resources" = ["*.json", "presets/*.json"]

@@ -23,6 +23,15 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: sudo apt-get update && sudo apt-get install -y ${{ env.QT_LINUX_DEPS }}
       - run: pip install -e ".[dev]"
+      - name: Verify tag matches eter.__version__
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver="$(python -c 'import eter,sys; sys.stdout.write(eter.__version__)')"
+          norm() { echo "$1" | tr 'A-Z' 'a-z' | tr -d '.-'; }
+          if [ "$(norm "$tag")" != "$(norm "$ver")" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match eter.__version__ ($ver)"; exit 1
+          fi
       - run: pytest -q
         env:
           QT_QPA_PLATFORM: offscreen
@@ -47,6 +56,11 @@ jobs:
       - name: Install project
         run: pip install ".[dev]"
 
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "version=$(python -c 'import eter,sys; sys.stdout.write(eter.__version__)')" >> "$GITHUB_OUTPUT"
+
       - name: Build with PyInstaller
         run: pyinstaller eter.spec --noconfirm --clean
 
@@ -55,33 +69,31 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           hdiutil create -volname eter -srcfolder dist/eter.app \
-            -ov -format UDZO dist/eter-macos.dmg
+            -ov -format UDZO "dist/eter-macos-${{ steps.ver.outputs.version }}.dmg"
       - name: Upload macOS
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: eter-macos
-          path: dist/eter-macos.dmg
+          path: dist/eter-macos-*.dmg
 
       # ---------- Windows: portable .zip + Setup.exe ----------
       - name: Package Windows (.zip)
         if: runner.os == 'Windows'
-        run: Compress-Archive -Path dist/eter/* -DestinationPath dist/eter-windows-x64.zip
+        run: Compress-Archive -Path dist/eter/* -DestinationPath "dist/eter-windows-x64-${{ steps.ver.outputs.version }}.zip"
       - name: Build Windows installer (Inno Setup)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           choco install innosetup -y --no-progress
-          $version = "${env:GITHUB_REF_NAME}" -replace '^v', ''
-          if (-not $version) { $version = "0.0.0" }
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=$version packaging\eter.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DMyAppVersion=${{ steps.ver.outputs.version }} packaging\eter.iss
       - name: Upload Windows
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: eter-windows
           path: |
-            dist/eter-windows-x64.zip
+            dist/eter-windows-x64-*.zip
             dist/eter-Setup-*.exe
 
       # ---------- Linux: tar.gz + .deb + .rpm ----------
@@ -89,10 +101,9 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          [ -z "$VERSION" ] && VERSION="0.0.0"
+          VERSION="${{ steps.ver.outputs.version }}"
 
-          tar -C dist -czf "dist/eter-linux-x64.tar.gz" eter
+          tar -C dist -czf "dist/eter-linux-x64-${VERSION}.tar.gz" eter
 
           STAGE="$(mktemp -d)"
           mkdir -p "$STAGE/opt/eter" "$STAGE/usr/bin" \
@@ -119,7 +130,7 @@ jobs:
         with:
           name: eter-linux
           path: |
-            dist/eter-linux-x64.tar.gz
+            dist/eter-linux-x64-*.tar.gz
             dist/*.deb
             dist/*.rpm
 
