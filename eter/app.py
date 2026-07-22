@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, QTimer, QUrl
 from PySide6.QtGui import QAction, QActionGroup, QCursor, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon, QWidgetAction
 
-from . import __version__, config, icons, theme
+from . import __version__, config, display_version, icons, theme
 from .catalog import Catalog, Station
 from .catalog_repository import CatalogRepository
 from .menu_builder import TrayMenuBuilder
@@ -174,7 +174,7 @@ class TrayApp(QObject):
         self.menu.addAction(quit_action)
 
         self.menu.addSeparator()
-        version_item = QAction(f"eter {__version__}", self.menu)
+        version_item = QAction(f"eter {display_version()}", self.menu)
         version_item.setEnabled(False)  # non-interactive version footer
         self.menu.addAction(version_item)
 
