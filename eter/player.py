@@ -14,6 +14,7 @@ from PySide6.QtMultimedia import (
     QAudioBufferOutput,
     QAudioFormat,
     QAudioOutput,
+    QMediaDevices,
     QMediaPlayer,
 )
 
@@ -95,6 +96,13 @@ class RadioPlayer(QObject):
         self._player.setAudioBufferOutput(self._buffer_output)
         self._buffer_output.audioBufferReceived.connect(self._on_audio_buffer)
 
+        # Follow the system default audio output. Qt binds QAudioOutput to the
+        # device present at creation and does not track later changes, so switching
+        # the OS sound output would otherwise keep playback on the old device until
+        # the app restarts.
+        self._devices = QMediaDevices(self)
+        self._devices.audioOutputsChanged.connect(self._sync_default_output)
+
         self._player.playbackStateChanged.connect(self._on_playback_state)
         self._player.mediaStatusChanged.connect(self._on_media_status)
         self._player.errorOccurred.connect(self._on_error)
@@ -119,6 +127,14 @@ class RadioPlayer(QObject):
 
     def volume(self) -> float:
         return float(self._audio.volume())
+
+    def _sync_default_output(self) -> None:
+        """Redirect playback to the current system default output device when it
+        changes (headphones, Bluetooth, …), so it follows without a restart."""
+        default = QMediaDevices.defaultAudioOutput()
+        if default.isNull() or self._audio.device() == default:
+            return
+        self._audio.setDevice(default)
 
     def play(self, url: str) -> None:
         self._reconnect_attempts = 0
