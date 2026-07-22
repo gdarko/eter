@@ -173,6 +173,11 @@ class TrayApp(QObject):
         quit_action.triggered.connect(self.quit)
         self.menu.addAction(quit_action)
 
+        self.menu.addSeparator()
+        version_item = QAction(f"eter {__version__}", self.menu)
+        version_item.setEnabled(False)  # non-interactive version footer
+        self.menu.addAction(version_item)
+
     # ------------------------------------------------------------- behaviour
     def _is_current(self, st: Station) -> bool:
         return (
