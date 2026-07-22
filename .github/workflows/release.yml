@@ -148,3 +148,6 @@ jobs:
           files: artifacts/**/*
           generate_release_notes: true
           fail_on_unmatched_files: false
+          # Pre-release tags (…-rc.N / …rcN) must not become "latest", so the
+          # in-app updater (which reads /releases/latest) skips release candidates.
+          prerelease: ${{ contains(github.ref_name, 'rc') }}
