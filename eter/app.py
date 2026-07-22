@@ -7,7 +7,7 @@ observes the catalog and rebuilds the menu whenever it changes.
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, QTimer, QUrl
-from PySide6.QtGui import QAction, QActionGroup, QCursor, QDesktopServices
+from PySide6.QtGui import QAction, QActionGroup, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon, QWidgetAction
 
 from . import __version__, config, display_version, icons, theme
@@ -18,6 +18,7 @@ from .metadata import NowPlayingResolver
 from .pack_service import RemotePackService
 from .player import RadioPlayer
 from .settings_dialog import SettingsDialog
+from .tray_menu import make_tray_menu
 from .updater import UpdateChecker
 from .widgets import NowPlayingHeader
 
@@ -57,10 +58,15 @@ class TrayApp(QObject):
         self.tray = QSystemTrayIcon(self)
         self.tray.setIcon(icons.tray_icon(active=False))
         self.tray.setToolTip("eter — stopped")
-        self.tray.activated.connect(self._on_tray_activated)
 
         self.menu = QMenu()
         self.menu.aboutToShow.connect(self._update_sleep_label)
+
+        # Platform tray-menu presentation (Strategy): popup+header on mac/win,
+        # native context menu on Linux (DBus tray can't render the header widget).
+        self._tray_menu = make_tray_menu(self)
+        self._tray_menu.install(self.tray, self.menu)
+        self.menu.aboutToShow.connect(self._tray_menu.refresh)
 
         # sleep timer
         self._sleep_minutes = 0
@@ -122,7 +128,7 @@ class TrayApp(QObject):
         self._station_group = QActionGroup(self.menu)
         self._station_group.setExclusive(True)
 
-        self.menu.addAction(self.header_action)
+        self._tray_menu.build_now_playing(self.menu)
         self.menu.addSeparator()
 
         builder = TrayMenuBuilder(self.catalog, qss, self.play_station, self._is_current)
@@ -379,20 +385,6 @@ class TrayApp(QObject):
             act.setChecked(self._is_current(st))
 
     # ---------------------------------------------------------------- system
-    def _on_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        # We render the menu ourselves (not the native tray menu) so the
-        # waveform animates and the custom header renders on all platforms.
-        R = QSystemTrayIcon.ActivationReason
-        if reason in (R.Trigger, R.Context):
-            self._popup_menu()
-
-    def _popup_menu(self) -> None:
-        rect = self.tray.geometry()
-        if rect.isValid() and rect.width() > 0 and rect.height() > 0:
-            self.menu.popup(rect.bottomLeft())
-        else:
-            self.menu.popup(QCursor.pos())
-
     def open_settings(self) -> None:
         if self._settings_dialog is not None and self._settings_dialog.isVisible():
             self._settings_dialog.raise_()
