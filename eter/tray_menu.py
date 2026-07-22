@@ -13,6 +13,7 @@ from __future__ import annotations
 import sys
 from abc import ABC, abstractmethod
 
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QActionGroup, QCursor
 from PySide6.QtWidgets import QMenu, QSystemTrayIcon
 
@@ -51,11 +52,17 @@ class PopupTrayMenu(TrayMenuStrategy):
         # header widget renders and the waveform animates.
         R = QSystemTrayIcon.ActivationReason
         if reason in (R.Trigger, R.Context):
-            rect = self._tray.geometry()
-            if rect.isValid() and rect.width() > 0 and rect.height() > 0:
-                self._menu.popup(rect.bottomLeft())
-            else:
-                self._menu.popup(QCursor.pos())
+            # Defer to the next event-loop turn: popping up synchronously inside
+            # the click handler lets the mouse release fall through onto the menu
+            # on Windows, which can land on "Quit" and close the app.
+            QTimer.singleShot(0, self._show_menu)
+
+    def _show_menu(self) -> None:
+        rect = self._tray.geometry()
+        if rect.isValid() and rect.width() > 0 and rect.height() > 0:
+            self._menu.popup(rect.bottomLeft())
+        else:
+            self._menu.popup(QCursor.pos())
 
     def build_now_playing(self, menu: QMenu) -> None:
         menu.addAction(self.app.header_action)
