@@ -38,6 +38,45 @@ def test_window_panel_lists_and_plays(tmp_path):
     assert app.current is st
 
 
+def test_window_close_quits_when_no_tray(tmp_path, monkeypatch):
+    app = _app(tmp_path)  # offscreen -> no tray
+    p = app._presenter
+    assert p.tray is None
+    quit_calls = []
+    monkeypatch.setattr(app, "quit", lambda: quit_calls.append(True))
+    assert p._on_window_close() is True  # allow the close
+    assert quit_calls == [True] and p._closing is True
+
+
+def test_window_close_hides_to_tray_when_present(tmp_path):
+    app = _app(tmp_path)
+    p = app._presenter
+    p.tray = object()  # pretend a tray exists
+    assert p._on_window_close() is False  # hide to tray, do not quit
+    assert p._closing is False
+
+
+def test_window_shutdown_hides_without_quitting(tmp_path):
+    app = _app(tmp_path)
+    p = app._presenter
+    p.shutdown()
+    assert p._closing is True and not p.window.isVisible()
+
+
+def test_main_window_close_honours_callback():
+    from eter.presenter import _MainWindow
+
+    kept = _MainWindow(lambda: False)  # False -> stay alive (hidden)
+    kept.show()
+    kept.close()
+    assert not kept.isVisible()  # ignored the close, hid instead
+
+    closed = _MainWindow(lambda: True)  # True -> real close
+    closed.show()
+    closed.close()
+    assert not closed.isVisible()
+
+
 def test_tray_presenter_builds_menu(tmp_path):
     app = _app(tmp_path)
     tp = TrayPresenter(app)

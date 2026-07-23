@@ -34,6 +34,25 @@ _MSG = {
 }
 
 
+class _MainWindow(QWidget):
+    """Top-level window that asks a callback what closing should do.
+
+    ``on_close()`` returns True to let the window close (quit the app) or False to
+    keep the app running and hide the window (minimize to tray).
+    """
+
+    def __init__(self, on_close):
+        super().__init__()
+        self._on_close = on_close
+
+    def closeEvent(self, event):  # noqa: N802 - Qt override
+        if self._on_close():
+            super().closeEvent(event)
+        else:
+            event.ignore()
+            self.hide()
+
+
 class Presenter(ABC):
     """A view for the app. Methods are driven by the TrayApp Mediator."""
 
@@ -207,34 +226,84 @@ class TrayPresenter(Presenter):
 
 
 class WindowPresenter(Presenter):
-    """A small desktop window hosting the shared PlayerPanel (Linux / no tray)."""
+    """A desktop window hosting the shared PlayerPanel, with a best-effort tray.
+
+    Where the desktop has a tray, closing the window minimizes to it (Show/Quit in
+    the tray menu); where it does not, closing the window quits — so the app is
+    never left running invisibly.
+    """
 
     def __init__(self, app):
         super().__init__(app)
-        self.window = QWidget()
+        self._closing = False
+
+        self.window = _MainWindow(self._on_window_close)
         self.window.setObjectName("panelWindow")
         self.window.setWindowTitle("eter")
+        self.window.setWindowIcon(icons.tray_icon(active=False))
         lay = QVBoxLayout(self.window)
         lay.setContentsMargins(0, 0, 0, 0)
         self.panel = PlayerPanel(app)
         lay.addWidget(self.panel)
         self.window.resize(theme.MENU_WIDTH, 540)
 
+        # Best-effort tray for minimize-to-tray (only where the desktop has one).
+        self.tray = None
+        if QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray = QSystemTrayIcon(app)
+            self.tray.setIcon(icons.tray_icon(active=False))
+            self.tray.setToolTip("eter")
+            menu = QMenu()
+            show_action = QAction("Show eter", menu)
+            show_action.triggered.connect(self._show_window)
+            menu.addAction(show_action)
+            menu.addSeparator()
+            quit_action = QAction("Quit eter", menu)
+            quit_action.triggered.connect(app.quit)
+            menu.addAction(quit_action)
+            # setContextMenu so the menu works on Linux SNI/DBus (no click activation).
+            self.tray.setContextMenu(menu)
+            self.tray.activated.connect(self._on_tray_activated)
+            self._tray_menu = menu  # keep a reference alive
+
     def start(self) -> None:
         self.rebuild()
-        self.window.show()
+        if self.tray is not None:
+            self.tray.show()
+        self._show_window()
+
+    def _show_window(self) -> None:
+        self.window.showNormal()
         self.window.raise_()
         self.window.activateWindow()
+
+    def _on_tray_activated(self, reason) -> None:
+        R = QSystemTrayIcon.ActivationReason
+        if reason in (R.Trigger, R.DoubleClick):
+            self._show_window()
+
+    def _on_window_close(self) -> bool:
+        """closeEvent hook: True closes (quits), False hides to tray."""
+        if self._closing:
+            return True
+        if self.tray is not None:
+            return False  # minimize to tray; the app keeps running
+        self._closing = True
+        self.app.quit()  # no tray to fall back to: closing the window quits
+        return True
 
     def rebuild(self) -> None:
         self.panel.rebuild()
 
     def set_active(self, active: bool) -> None:
-        pass  # the header already reflects playback state
+        if self.tray is not None:
+            self.tray.setIcon(icons.tray_icon(active=active))
 
     def update_status(self) -> None:
-        app = self.app
-        self.window.setWindowTitle(app._np_text() if app.current else "eter")
+        text = self.app._np_text() if self.app.current else "eter"
+        self.window.setWindowTitle(text)
+        if self.tray is not None:
+            self.tray.setToolTip(f"eter — {text}" if self.app.current else "eter")
 
     def sync_active(self) -> None:
         self.panel.sync_active()
@@ -249,7 +318,10 @@ class WindowPresenter(Presenter):
         self.panel.update_sleep_label()
 
     def shutdown(self) -> None:
-        self.window.close()
+        self._closing = True
+        self.window.hide()
+        if self.tray is not None:
+            self.tray.hide()
 
 
 def make_presenter(app) -> Presenter:
