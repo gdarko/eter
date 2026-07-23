@@ -1,9 +1,9 @@
-"""Entry point: start the QApplication and the tray."""
+"""Entry point: start the QApplication and the app."""
 from __future__ import annotations
 
 import sys
 
-from PySide6.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication
 
 from . import config
 from .app import TrayApp
@@ -21,16 +21,12 @@ def main() -> int:
     app.setQuitOnLastWindowClosed(False)
     hide_dock_icon()
 
-    if not QSystemTrayIcon.isSystemTrayAvailable():
-        QMessageBox.critical(
-            None, "eter", "No system tray is available on this system."
-        )
-        return 1
-
+    # No system-tray requirement: TrayApp picks a presenter (tray or window),
+    # so the app still runs on desktops without a working tray.
     repository = CatalogRepository()
     catalog = repository.load()
-    tray = TrayApp(app, catalog, repository)
-    app._eter_tray = tray  # keep a strong reference alive for the app lifetime
+    controller = TrayApp(app, catalog, repository)
+    app._eter_controller = controller  # keep a strong reference for the app lifetime
     return app.exec()
 
 

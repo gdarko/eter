@@ -1,38 +1,27 @@
-"""The tray application controller.
+"""The application controller.
 
-TrayApp is a Mediator: it wires the catalog, player, metadata resolver, menu
-builder, and settings together, and translates their signals into UI updates. It
-observes the catalog and rebuilds the menu whenever it changes.
+TrayApp is a Mediator: it wires the catalog, player, metadata resolver, and
+settings together and translates their signals into UI updates. It observes the
+catalog and drives a Presenter (tray popup or desktop window) for all view work,
+so it carries no view/platform branching itself.
 """
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QTimer, QUrl
-from PySide6.QtGui import QAction, QActionGroup, QDesktopServices
-from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon, QWidgetAction
+from PySide6.QtCore import QObject, QTimer
+from PySide6.QtWidgets import QApplication
 
-from . import __version__, config, display_version, icons, theme
+from . import __version__, config, theme
 from .catalog import Catalog, Station
 from .catalog_repository import CatalogRepository
-from .menu_builder import TrayMenuBuilder
 from .metadata import NowPlayingResolver
 from .pack_service import RemotePackService
 from .player import RadioPlayer
+from .presenter import make_presenter
 from .settings_dialog import SettingsDialog
-from .tray_menu import make_tray_menu
 from .updater import UpdateChecker
 from .widgets import NowPlayingHeader
 
 _ACTIVE_STATES = ("connecting", "buffering", "playing", "reconnecting")
-
-SLEEP_OPTIONS = [
-    (0, "Off"),
-    (15, "15 minutes"),
-    (30, "30 minutes"),
-    (45, "45 minutes"),
-    (60, "1 hour"),
-    (90, "1.5 hours"),
-    (120, "2 hours"),
-]
 
 
 class TrayApp(QObject):
@@ -55,47 +44,20 @@ class TrayApp(QObject):
         self.player.set_volume(self._volume)
         self.notifications = self._read_bool("notifications", True)
 
-        self.tray = QSystemTrayIcon(self)
-        self.tray.setIcon(icons.tray_icon(active=False))
-        self.tray.setToolTip("eter — stopped")
-
-        self.menu = QMenu()
-        self.menu.aboutToShow.connect(self._update_sleep_label)
-
-        # Platform tray-menu presentation (Strategy): popup+header on mac/win,
-        # native context menu on Linux (DBus tray can't render the header widget).
-        self._tray_menu = make_tray_menu(self)
-        self._tray_menu.install(self.tray, self.menu)
-        self.menu.aboutToShow.connect(self._tray_menu.refresh)
-
         # sleep timer
         self._sleep_minutes = 0
         self._sleep_timer = QTimer(self)
         self._sleep_timer.setSingleShot(True)
         self._sleep_timer.timeout.connect(self._on_sleep_fired)
-        self._sleep_menu: QMenu | None = None
-        self._sleep_actions: list[tuple[int, QAction]] = []
 
-        # now-playing header card (persists across menu rebuilds)
+        # now-playing header card (shared by whichever presenter is active)
         self.header = NowPlayingHeader(self._palette, width=theme.MENU_WIDTH)
         self.header.playToggled.connect(self._toggle_play)
         self.header.volumeChanged.connect(self._on_volume)
         self.header.set_volume(int(round(self._volume * 100)))
-        self.header_action = QWidgetAction(self)
-        self.header_action.setDefaultWidget(self.header)
-
-        self.player.stateChanged.connect(self._on_state)
-        self.player.errorText.connect(self._on_error)
-        self.player.audioLevel.connect(self.header.push_level)
-        self.nowplaying.titleChanged.connect(self._on_title)
-        self.catalog.changed.connect(self._build_menu)  # Observer
-        try:
-            self.app.styleHints().colorSchemeChanged.connect(self._on_theme_changed)
-        except Exception:  # noqa: BLE001 - older Qt
-            pass
+        self.header_action = None  # created by TrayPresenter when the tray is used
 
         self._settings_dialog: SettingsDialog | None = None
-        self._station_actions: list[tuple[Station, QAction]] = []
 
         # update checker (notify-only)
         self._update_info: tuple[str, str] | None = None
@@ -111,78 +73,26 @@ class TrayApp(QObject):
         self.pack_service = RemotePackService(parent=self)
         self.pack_service.manifestReady.connect(self._on_manifest)
 
-        self._build_menu()
+        # presentation (Strategy): tray on macOS/Windows, window on Linux / no tray
+        self._presenter = make_presenter(self)
+
+        self.player.stateChanged.connect(self._on_state)
+        self.player.errorText.connect(self._on_error)
+        self.player.audioLevel.connect(self.header.push_level)
+        self.nowplaying.titleChanged.connect(self._on_title)
+        self.catalog.changed.connect(self._presenter.rebuild)  # Observer
+        try:
+            self.app.styleHints().colorSchemeChanged.connect(self._on_theme_changed)
+        except Exception:  # noqa: BLE001 - older Qt
+            pass
+
+        self._presenter.start()
         self._restore_last_station()
-        self.tray.show()
 
         if self._read_bool("check_updates", True):
             self.updater.check()
         if self._read_bool("check_pack_updates", True):
             self.pack_service.check()
-
-    # ------------------------------------------------------------------ menu
-    def _build_menu(self) -> None:
-        self.menu.clear()
-        qss = theme.menu_qss(self._palette)
-        self.menu.setStyleSheet(qss)
-        self._station_group = QActionGroup(self.menu)
-        self._station_group.setExclusive(True)
-
-        self._tray_menu.build_now_playing(self.menu)
-        self.menu.addSeparator()
-
-        builder = TrayMenuBuilder(self.catalog, qss, self.play_station, self._is_current)
-        builder.build_into(self.menu, self._station_group)
-        self._station_actions = builder.station_actions
-        self.menu.addSeparator()
-
-        self._sleep_menu = self.menu.addMenu(self._sleep_title())
-        self._sleep_menu.setStyleSheet(qss)
-        sleep_group = QActionGroup(self._sleep_menu)
-        sleep_group.setExclusive(True)
-        self._sleep_actions = []
-        for minutes, label in SLEEP_OPTIONS:
-            act = QAction(label, self._sleep_menu)
-            act.setCheckable(True)
-            act.setChecked(minutes == self._sleep_minutes)
-            act.setActionGroup(sleep_group)
-            act.triggered.connect(lambda _c=False, m=minutes: self._set_sleep(m))
-            self._sleep_menu.addAction(act)
-            self._sleep_actions.append((minutes, act))
-        self.menu.addSeparator()
-
-        if self._update_info is not None:
-            version, url = self._update_info
-            update_action = QAction(f"⬆  Update available: {version}", self.menu)
-            update_action.triggered.connect(
-                lambda _=False, u=url: QDesktopServices.openUrl(QUrl(u))
-            )
-            self.menu.addAction(update_action)
-
-        self._add_settings_quit()
-
-        self.header.set_state(self.state)
-        if self.current is not None:
-            self.header.set_station(self.current.name)
-            self.header.set_title(self.current_title)
-
-    def _add_settings_quit(self) -> None:
-        settings_action = QAction("Settings…", self.menu)
-        settings_action.triggered.connect(self.open_settings)
-        self.menu.addAction(settings_action)
-
-        check_action = QAction("Check for Updates…", self.menu)
-        check_action.triggered.connect(self._check_updates_manual)
-        self.menu.addAction(check_action)
-
-        quit_action = QAction("Quit eter", self.menu)
-        quit_action.triggered.connect(self.quit)
-        self.menu.addAction(quit_action)
-
-        self.menu.addSeparator()
-        version_item = QAction(f"eter {display_version()}", self.menu)
-        version_item.setEnabled(False)  # non-interactive version footer
-        self.menu.addAction(version_item)
 
     # ------------------------------------------------------------- behaviour
     def _is_current(self, st: Station) -> bool:
@@ -200,8 +110,8 @@ class TrayApp(QObject):
         self.header.set_title("")
         self.player.play(st.url)
         self.nowplaying.start(st)
-        self._sync_checks()
-        self._update_tooltip()
+        self._presenter.sync_active()
+        self._presenter.update_status()
 
     def _toggle_play(self) -> None:
         if self.state in _ACTIVE_STATES:
@@ -222,8 +132,8 @@ class TrayApp(QObject):
                     self.current = st
                     self.header.set_station(st.name)
                     self.header.set_state("stopped")
-                    self._sync_checks()
-                    self._update_tooltip()
+                    self._presenter.sync_active()
+                    self._presenter.update_status()
                 return
 
     # --------------------------------------------------------------- signals
@@ -234,25 +144,21 @@ class TrayApp(QObject):
 
     def _on_state(self, state: str) -> None:
         self.state = state
-        self.tray.setIcon(icons.tray_icon(active=state in _ACTIVE_STATES))
+        self._presenter.set_active(state in _ACTIVE_STATES)
         self.header.set_state(state)
-        self._update_tooltip()
+        self._presenter.update_status()
 
     def _on_error(self, message: str) -> None:
         if self.notifications:
-            self.tray.showMessage(
-                "eter — playback error", message, QSystemTrayIcon.MessageIcon.Warning
-            )
+            self._presenter.notify("eter — playback error", message, "warning")
 
     def _on_title(self, title: str) -> None:
         changed = title and title != self.current_title
         self.current_title = title
         self.header.set_title(title)
-        self._update_tooltip()
+        self._presenter.update_status()
         if changed and self.notifications and self.current is not None:
-            self.tray.showMessage(
-                self.current.name, title, QSystemTrayIcon.MessageIcon.NoIcon
-            )
+            self._presenter.notify(self.current.name, title, "none")
 
     def _on_manifest(self, manifest) -> None:
         self._manifest = [tuple(m) for m in manifest]
@@ -270,15 +176,14 @@ class TrayApp(QObject):
         )
         if has_update or has_new:
             self._pack_hint_shown = True
-            self.tray.showMessage(
-                "eter", "Station pack updates are available in Settings.",
-                QSystemTrayIcon.MessageIcon.Information,
+            self._presenter.notify(
+                "eter", "Station pack updates are available in Settings.", "info"
             )
 
     def _on_theme_changed(self, *_a) -> None:
         self._palette = theme.current()
         self.header.apply_palette(self._palette)
-        self.menu.setStyleSheet(theme.menu_qss(self._palette))
+        self._presenter.apply_theme()
 
     # ----------------------------------------------------------- updates
     def _check_updates_manual(self) -> None:
@@ -288,26 +193,19 @@ class TrayApp(QObject):
     def _on_update_available(self, version: str, url: str) -> None:
         self._update_info = (version, url)
         self._manual_check = False
-        self.tray.showMessage(
-            "eter — update available",
-            f"Version {version} is available. Use “Update available” in the menu.",
-            QSystemTrayIcon.MessageIcon.Information,
+        self._presenter.notify(
+            "eter — update available", f"Version {version} is available.", "info"
         )
-        self._build_menu()
+        self._presenter.rebuild()
 
     def _on_no_update(self) -> None:
         if self._manual_check:
-            self.tray.showMessage(
-                "eter", "You’re on the latest version.",
-                QSystemTrayIcon.MessageIcon.Information,
-            )
+            self._presenter.notify("eter", "You’re on the latest version.", "info")
         self._manual_check = False
 
     def _on_update_failed(self, message: str) -> None:
         if self._manual_check:
-            self.tray.showMessage(
-                "eter", message, QSystemTrayIcon.MessageIcon.Warning
-            )
+            self._presenter.notify("eter", message, "warning")
         self._manual_check = False
 
     # ----------------------------------------------------------- sleep timer
@@ -318,32 +216,18 @@ class TrayApp(QObject):
         else:
             self._sleep_timer.start(minutes * 60 * 1000)
             if self.notifications:
-                self.tray.showMessage(
-                    "eter",
-                    f"Sleep timer set for {self._sleep_remaining_text()}.",
-                    QSystemTrayIcon.MessageIcon.NoIcon,
+                self._presenter.notify(
+                    "eter", f"Sleep timer set for {self._sleep_remaining_text()}.", "none"
                 )
-        self._update_sleep_label()
+        self._presenter.update_sleep_label()
 
     def _on_sleep_fired(self) -> None:
         self._sleep_minutes = 0
         self.player.stop()
         self.nowplaying.stop()
-        self._update_sleep_label()
+        self._presenter.update_sleep_label()
         if self.notifications:
-            self.tray.showMessage(
-                "eter", "Sleep timer: playback stopped.",
-                QSystemTrayIcon.MessageIcon.NoIcon,
-            )
-
-    def _update_sleep_label(self) -> None:
-        try:
-            if self._sleep_menu is not None:
-                self._sleep_menu.setTitle(self._sleep_title())
-            for minutes, act in self._sleep_actions:
-                act.setChecked(minutes == self._sleep_minutes)
-        except RuntimeError:
-            pass  # menu was rebuilt underneath us; the next build refreshes it
+            self._presenter.notify("eter", "Sleep timer: playback stopped.", "none")
 
     def _sleep_title(self) -> str:
         if self._sleep_minutes and self._sleep_timer.isActive():
@@ -376,14 +260,6 @@ class TrayApp(QObject):
             return f"{self.current.name} — {self.current_title}"
         return f"{self.current.name} — ♪"
 
-    def _update_tooltip(self) -> None:
-        text = self._np_text()
-        self.tray.setToolTip(f"eter — {text}" if self.current else "eter — stopped")
-
-    def _sync_checks(self) -> None:
-        for st, act in self._station_actions:
-            act.setChecked(self._is_current(st))
-
     # ---------------------------------------------------------------- system
     def open_settings(self) -> None:
         if self._settings_dialog is not None and self._settings_dialog.isVisible():
@@ -400,7 +276,7 @@ class TrayApp(QObject):
         dlg.activateWindow()
 
     def _on_settings_closed(self, _result: int) -> None:
-        # Catalog edits were applied live (Observer already rebuilt the menu);
+        # Catalog edits were applied live (Observer already rebuilt the view);
         # re-read preferences that may have changed.
         self.notifications = self._read_bool("notifications", True)
         self._volume = float(self.settings.value("volume", self._volume))
@@ -410,12 +286,12 @@ class TrayApp(QObject):
             self._is_current(st) for st in self.catalog.all_stations()
         ):
             self.current = None
-        self._update_tooltip()
+        self._presenter.update_status()
 
     def quit(self) -> None:
         self.player.stop()
         self.nowplaying.stop()
-        self.tray.hide()
+        self._presenter.shutdown()
         self.app.quit()
 
     # --------------------------------------------------------------- helpers

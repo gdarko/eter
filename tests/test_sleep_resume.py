@@ -10,12 +10,18 @@ def _tray(tmp_path):
     return TrayApp(QApplication.instance(), catalog, repo), catalog
 
 
+def _sleep_actions(tray):
+    """The active presenter's sleep-timer actions (tray menu or window button)."""
+    p = tray._presenter
+    return p.panel._sleep_actions if hasattr(p, "panel") else p._sleep_actions
+
+
 def test_sleep_timer_set_and_clear(tmp_path):
     tray, _ = _tray(tmp_path)
     tray._set_sleep(30)
     assert tray._sleep_minutes == 30
     assert tray._sleep_timer.isActive()
-    assert [m for m, a in tray._sleep_actions if a.isChecked()] == [30]
+    assert [m for m, a in _sleep_actions(tray) if a.isChecked()] == [30]
     tray._set_sleep(0)
     assert not tray._sleep_timer.isActive()
 

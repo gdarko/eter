@@ -4,6 +4,7 @@ from __future__ import annotations
 from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -73,6 +74,21 @@ class SettingsDialog(QDialog):
         self.resume_cb.setChecked(self._read_bool("auto_resume", True))
         lay.addWidget(self.resume_cb)
 
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel("Display as"))
+        self.display_mode = QComboBox()
+        self.display_mode.addItem("Auto (tray, or window on Linux)", "auto")
+        self.display_mode.addItem("Tray / menu bar", "tray")
+        self.display_mode.addItem("Window", "window")
+        cur = str(self._settings.value("display_mode", "auto") or "auto").lower()
+        idx = self.display_mode.findData(cur)
+        self.display_mode.setCurrentIndex(idx if idx >= 0 else 0)
+        mode_row.addWidget(self.display_mode, 1)
+        lay.addLayout(mode_row)
+        hint = QLabel("Takes effect after restarting eter.")
+        hint.setStyleSheet("color: gray; font-size: 11px;")
+        lay.addWidget(hint)
+
         vol = QHBoxLayout()
         vol.addWidget(QLabel("Default volume"))
         self.volume = QSlider(Qt.Orientation.Horizontal)
@@ -87,6 +103,7 @@ class SettingsDialog(QDialog):
         self._settings.setValue("notifications", self.notifications_cb.isChecked())
         self._settings.setValue("check_updates", self.updates_cb.isChecked())
         self._settings.setValue("auto_resume", self.resume_cb.isChecked())
+        self._settings.setValue("display_mode", self.display_mode.currentData())
         self._settings.setValue("volume", self.volume.value() / 100.0)
         autostart.set_enabled(self.autostart_cb.isChecked())
         self._repo.save(self._catalog)

@@ -68,3 +68,29 @@ def menu_qss(p: Palette) -> str:
     QMenu::separator {{ height: 1px; background: {p.sep}; margin: 6px 12px; }}
     QMenu::right-arrow {{ width: 10px; height: 10px; }}
     """
+
+
+def panel_qss(p: Palette) -> str:
+    """QSS for the windowed player (mirrors the menu look for a normal window)."""
+    return f"""
+    QWidget#panel {{ background: {p.bg}; }}
+    QTreeWidget#stations {{
+        background: {p.bg};
+        color: {p.text};
+        border: none;
+        outline: 0;
+    }}
+    QTreeWidget#stations::item {{ padding: 5px 4px; border-radius: 6px; }}
+    QTreeWidget#stations::item:hover {{ background: {p.hover}; }}
+    QTreeWidget#stations::item:selected {{ background: {p.accent}; color: #ffffff; }}
+    QLabel#panelStatus {{ color: {p.text2}; font-size: 11px; }}
+    QToolButton#panelBtn {{
+        color: {p.text};
+        background: {p.surface};
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+    }}
+    QToolButton#panelBtn:hover {{ background: {p.hover}; }}
+    QToolButton#panelBtn::menu-indicator {{ image: none; }}
+    """

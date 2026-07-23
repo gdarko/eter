@@ -13,6 +13,21 @@ ORG_NAME = "eter"
 ORG_DOMAIN = "eter.app"
 DISPLAY_NAME = "eter"
 
+# Sleep-timer choices, shared by the tray menu and the window (minutes, label).
+SLEEP_OPTIONS = [
+    (0, "Off"),
+    (15, "15 minutes"),
+    (30, "30 minutes"),
+    (45, "45 minutes"),
+    (60, "1 hour"),
+    (90, "1.5 hours"),
+    (120, "2 hours"),
+]
+
+# How the app presents itself: "auto" (window on Linux / when no tray, else tray),
+# or forced "tray" / "window".
+DISPLAY_MODES = ("auto", "tray", "window")
+
 # Curated packs are also served raw from GitHub so they can be updated between
 # app releases. Override with ETER_PACKS_URL (e.g. a local dir during testing).
 REMOTE_PACKS_URL = os.environ.get(
